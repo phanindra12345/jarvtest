@@ -1,30 +1,39 @@
 #heloo 
-import google.generativeai as genai
-from datetime import datetime
+import requests
+from datetime import datetime  # Corrected import for the datetime class
 import os
 import re
-import shutil
+import shutil  # For regular expressions
 import psutil
 import pyautogui
 import pytz
-import speech_recognition as sr
-import pyttsx3
+import speech_recognition as sr  # Speech recognition library
+import pyttsx3  # Text-to-speech conversion
 import subprocess
 import webbrowser
 from playsound import playsound
+import google.generativeai as genai
+genai.configure(api_key=os.environ.get(
+    "API_KEY", "AIzaSyAHR-VibLkLg15S99FvIWjr26UjeRz9dPQ"))
+
 
 # Initialize the text-to-speech engine
 tts_engine = pyttsx3.init()
 
 # Function to make Jarvis speak
+
+
 def speak(text):
     tts_engine.say(text)
     tts_engine.runAndWait()
+
 
 # Initialize the recognizer
 recognizer = sr.Recognizer()
 
 # Function to take voice input and convert it to text with noise handling
+
+
 def listen():
     with sr.Microphone() as source:
         print("Listening...")
@@ -46,18 +55,18 @@ def listen():
             return ""
 
 # Function to respond to specific commands
-def respond(command):
 
-    user_input = None
+
+def respond(command):
     # Remove any trigger word like "Jarvis"
     command = re.sub(r"\bjarvis\b", "", command).strip()
+
     if "push to github" in command:
         speak("Pushing code to GitHub.")
         result = git_push()
         speak(result)
         return False
 
-    # Command for committing with a voice message
     elif "commit" in command and "message" in command:
         match = re.search(r"commit with message\s+['\"]?(.*?)['\"]?$", command)
         if match:
@@ -67,14 +76,12 @@ def respond(command):
             speak(result)
         return False
 
-    # Command for adding changes
     elif "add changes" in command:
         speak("Adding all changes.")
         result = git_add()
         speak(result)
         return False
 
-    # Handle greetings and inquiries
     elif re.search(r"(hello|hi|hey)", command):
         speak("Hello! How can I assist you today?")
         return False
@@ -82,14 +89,12 @@ def respond(command):
         speak("I am Jarvis, your personal assistant.")
         return False
 
-    # Time commands
     elif re.search(r"time in (india|usa|uk|canada)", command):
         country = re.search(r"(india|usa|uk|canada)", command).group(0)
         current_time = get_current_time(country.upper())
         speak(f"The current time in {country.capitalize()} is {current_time}.")
         return False
 
-    # Open applications
     elif re.search(r"(open|start|launch)\s+(notepad|chrome|calculator|word)", command):
         app_name = re.search(
             r"(notepad|chrome|calculator|word)", command).group(0)
@@ -97,47 +102,42 @@ def respond(command):
         open_application(app_name)
         return False
 
-    # Open websites
     elif re.search(r"go to\s+(.*\..*)", command):
         website_name = re.search(r"go to\s+(.*\..*)", command).group(1)
         speak(f"Opening {website_name}.")
         open_website(website_name)
         return False
 
-    # Write text in Notepad
     elif re.search(r"copy\s+(.*)", command):
         text_to_write = re.search(r"copy\s+(.*)", command).group(1)
         speak(f"Writing '{text_to_write}' in Notepad.")
         write_in_notepad(text_to_write)
         return False
 
-    # Close applications
     elif re.search(r"close\s+(.*)", command):
         app_name = re.search(r"close\s+(.*)", command).group(1)
         speak(f"Closing {app_name}.")
         close_application(app_name)
         return False
 
-    # Create a folder command
     elif re.search(r"create a folder\s+(.*)", command):
         folder_name = re.search(r"create a folder\s+(.*)", command).group(1)
         create_folder(folder_name)
         return False
 
-    # Delete a folder command
-    match_delete = re.search(r"delete a folder\s+['\"]?(.+?)['\"]?$", command)
-    if match_delete:
-        folder_name = match_delete.group(1)
-        delete_folder(folder_name)
+    elif "delete a folder" in command:
+        match_delete = re.search(
+            r"delete a folder\s+['\"]?(.+?)['\"]?$", command)
+        if match_delete:
+            folder_name = match_delete.group(1)
+            delete_folder(folder_name)
         return False
 
-    # Sleep computer
     elif 'exit' in command or 'sleep' in command:
         speak("Putting the computer to sleep.")
         os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
         return True  # Exit the loop
 
-    # Play music command
     elif re.search(r"(play video song|play audio song)\s+(.*)", command):
         media_type = re.search(
             r"(play video song|play audio song)", command).group(1)
@@ -149,7 +149,7 @@ def respond(command):
         else:
             play_audio_song(song_name)
         return False
-    
+
     elif "cpu usage" in command:
         speak(get_cpu_usage())
         return False
@@ -159,24 +159,17 @@ def respond(command):
     elif "disc space" in command:
         speak(get_disk_space())
         return False
-    
-    # Write a program command using Google Generative AI
-    elif re.search(r"write a program", command):
-        program_description = re.search(
-            r"write a program\s+(.*)", command).group(1)
-        speak(f"Generating a program to {program_description}.")
-        generated_code = generate_code_with_gemini(program_description)
-        print(generated_code)
+    elif command.startswith("ask gemini"):
+        # Remove "ask gemini" from the command
+        question = command.replace("ask gemini", "").strip()
+        speak(f"Let me ask Gemini: {question}.")
+        result = ask_gemini(question)  # Ask the Gemini AI the question
+        print(result)  # Print the response from Gemini to the console
+        # Make Jarvis speak the response
         return False
 
-
-    # Exit Jarvis
-    elif 'bye' in command or 'leave' in command:
-        speak("Goodbye!")
-        return True  # Indicate to exit the loop
-    
-    # Return None for unrecognized commands
     return None
+
 
 # Function to get the current time for a specific country
 def get_current_time(country):
@@ -323,33 +316,7 @@ def get_disk_space():
     free_space = disk.free // (2**30)    # Convert to GB
 
     return f"Total disk space: {total_space}GB, Used: {used_space}GB, Free: {free_space}GB."
-
-
-def generate_code_with_gemini(prompt):
-    try:
-        # Set up the API and model if not done already
-        genai.configure(api_key="AIzaSyBqWAQzhBoJe5_s2tSLSACxU_F8GdOCgHg")  # Use your API key
-
-        # Send the prompt to the Gemini model
-        response = genai.generate_text(
-            model="gemini-1.5-pro",
-            prompt=prompt
-        )
-
-        # Extract the generated code
-        generated_code = response['generated_text']
-
-        # Return the generated code
-        return generated_code
-
-    except Exception as e:
-        print({str(e)})
-        return f"Sorry, I couldn't generate the code due to an error: {str(e)}"
-
-
 # Function to run git commands
-
-
 def run_git_command(command):
     try:
         result = subprocess.run(
@@ -375,6 +342,16 @@ def git_commit(commit_message):
 
 def git_push():
     return run_git_command("git push origin main")  # or another branch
+
+
+def ask_gemini(prompt):
+    try:
+        # Using the "gemini-1.5-flash" model
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
+        return response.text if response and response.text else "I couldn't get a response."
+    except Exception as e:
+        return f"An error occurred with Gemini AI: {str(e)}"
 
 if __name__ == "__main__":
     speak("Hello, I am Jarvis. How can I assist you today?")
