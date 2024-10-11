@@ -77,6 +77,7 @@ def respond(command):
             speak(f"Committing changes with message: {commit_message}")
             result = git_commit(commit_message)
             speak(result)
+            print(result)
         return False
 
     elif "add changes" in command:
