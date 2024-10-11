@@ -353,7 +353,9 @@ def git_add():
 
 
 def git_commit(commit_message):
+    print({commit_message})
     return run_git_command(f'git commit -m "{commit_message}"')
+    
 
 # Function to push to GitHub
 
