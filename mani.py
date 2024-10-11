@@ -1,4 +1,5 @@
 #heloo 
+from bs4 import BeautifulSoup
 import requests
 from datetime import datetime  # Corrected import for the datetime class
 import os
@@ -60,8 +61,10 @@ def listen():
 def respond(command):
     # Remove any trigger word like "Jarvis"
     command = re.sub(r"\bjarvis\b", "", command).strip()
+    if "create flutter project" in command:
+        create_flutter_project()
 
-    if "push to github" in command:
+    elif "push to github" in command:
         speak("Pushing code to GitHub.")
         result = git_push()
         speak(result)
@@ -167,6 +170,21 @@ def respond(command):
         print(result)  # Print the response from Gemini to the console
         # Make Jarvis speak the response
         return False
+
+    # elif "create django project folder" in command:
+    #     speak("Please tell me the name of the folder.")
+    #     folder_name = listen()
+    #     if folder_name:
+    #         create_django_project(folder_name)
+    #     return False
+    elif "create project folder" in command:
+        create_project_folder(command)
+    elif "download" in command:
+        speak("Please tell me the name of the application you want to download.")
+        app_name = listen()
+        if app_name:
+           download_application(app_name)
+
 
     return None
 
@@ -352,6 +370,230 @@ def ask_gemini(prompt):
         return response.text if response and response.text else "I couldn't get a response."
     except Exception as e:
         return f"An error occurred with Gemini AI: {str(e)}"
+
+
+# def create_django_project(folder_name):
+#     desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+#     project_folder_path = os.path.join(desktop_path, folder_name)
+
+#     try:
+#         if not os.path.exists(project_folder_path):
+#             os.makedirs(project_folder_path)  # Create the project folder
+#             speak(f"Folder '{folder_name}' has been created on your desktop.")
+#         else:
+#             speak(f"Folder '{folder_name}' already exists on your desktop.")
+
+#         # Install virtualenv
+#         speak("Installing virtualenv.")
+#         subprocess.run(["pip", "install", "virtualenv"], check=True)
+
+#         # Ask for virtual environment name
+#         speak("Please tell me the name of the virtual environment.")
+#         venv_name = listen()
+#         if venv_name:
+#             venv_path = os.path.join(project_folder_path, venv_name)
+
+#             # Create the virtual environment
+#             subprocess.run(["virtualenv", venv_path], check=True)
+#             speak(f"Virtual environment '{venv_name}' has been created.")
+
+#             # Activate the virtual environment
+#             activate_command = os.path.join(venv_path, "Scripts", "activate")
+#             speak(f"Activating virtual environment '{venv_name}'.")
+#             subprocess.call(activate_command, shell=True)
+
+#             # Install Django
+#             speak("Installing Django.")
+#             subprocess.run(["pip", "install", "django"], check=True)
+
+    #         # Start Django project
+    #         speak("Please tell me the name of the Django project.")
+    #         project_name = listen()
+    #         if project_name:
+    #             subprocess.run(["django-admin", "startproject",
+    #                         project_name], cwd=project_folder_path, check=True)
+    #             speak(f"Django project '{project_name}' has been created.")
+
+    #             # Start Django app
+    #             speak("Please tell me the name of the Django app.")
+    #             app_name = listen()
+    #             if app_name:
+    #                 subprocess.run(["python", "manage.py", "startapp", app_name], cwd=os.path.join(
+    #                     project_folder_path, project_name), check=True)
+    #                 speak(f"Django app '{app_name}' has been created.")
+    # except subprocess.CalledProcessError as e:
+    #     speak(f"Sorry, an error occurred: {str(e)}")
+
+def create_project_folder(command):
+    speak("Please tell me the name of the folder.")
+    folder_name = listen()
+    if not folder_name:
+        return
+
+    # Ask for project type
+    speak("What type of project is this? Please say Django, Flutter,  etc.")
+    project_type = listen()
+
+    if project_type:
+        project_type = project_type.lower()  # Normalize to lower case
+
+        if "django" in project_type:
+            create_django_project(folder_name)
+        elif "flutter" in project_type:
+            # Assuming you have this function defined
+            create_flutter_project(folder_name)
+        else:
+            speak("Sorry, I don't recognize that project type. Please try again.")
+    else:
+        speak("I didn't catch the project type. Operation canceled.")
+
+
+def get_user_input(prompt):
+    """Helper function to get user input with retry and close option."""
+    while True:
+        speak(prompt)
+        user_input = listen()
+        if user_input:
+            if user_input.lower() == "close":
+                speak("Operation has been canceled.")
+                return None
+            return user_input
+        else:
+            speak("I didn't catch that. Please repeat.")
+
+
+def create_django_project(folder_name):
+    desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+    project_folder_path = os.path.join(desktop_path, folder_name)
+
+    try:
+        if not os.path.exists(project_folder_path):
+            os.makedirs(project_folder_path)  # Create the project folder
+            speak(f"Folder '{folder_name}' has been created on your desktop.")
+        else:
+            speak(f"Folder '{folder_name}' already exists on your desktop.")
+
+        # Install virtualenv
+        speak("Installing virtualenv.")
+        subprocess.run(["pip", "install", "virtualenv"], check=True)
+
+        # Ask for virtual environment name
+        venv_name = get_user_input(
+            "Please tell me the name of the virtual environment.")
+        if not venv_name:
+            return  # Exit if the user cancels
+
+        venv_path = os.path.join(project_folder_path, venv_name)
+
+        # Create the virtual environment
+        subprocess.run(["virtualenv", venv_path], check=True)
+        speak(f"Virtual environment '{venv_name}' has been created.")
+
+        # Activate the virtual environment
+        activate_command = os.path.join(venv_path, "Scripts", "activate")
+        speak(f"Activating virtual environment '{venv_name}'.")
+        subprocess.call(activate_command, shell=True)
+
+        # Install Django
+        speak("Installing Django.")
+        subprocess.run(["pip", "install", "django"], check=True)
+
+        # Start Django project
+        project_created = False  # Flag to track project creation status
+        while not project_created:
+            project_name = get_user_input(
+                "Please tell me the name of the Django project.")
+            if not project_name:
+                return  # Exit if the user cancels
+
+            try:
+                subprocess.run(["django-admin", "startproject",
+                               project_name], cwd=project_folder_path, check=True)
+                speak(f"Django project '{project_name}' has been created.")
+                project_created = True  # Set flag to True if project creation is successful
+            except subprocess.CalledProcessError as e:
+                speak(
+                    f"Sorry, an error occurred while creating the project: {str(e)}")
+
+        # Start Django app
+        app_name = get_user_input("Please tell me the name of the Django app.")
+        if not app_name:
+            return  # Exit if the user cancels
+
+        subprocess.run(["python", "manage.py", "startapp", app_name], cwd=os.path.join(
+            project_folder_path, project_name), check=True)
+        speak(f"Django app '{app_name}' has been created.")
+
+        # Final success message
+        speak("Django project and app creation completed successfully.")
+
+    except subprocess.CalledProcessError as e:
+        speak(f"Sorry, an error occurred: {str(e)}")
+
+
+def create_flutter_project():
+    # Ask the user for the project name
+    project_name = input("Enter the name of the Flutter project: ")
+
+    # Create the Flutter project using the provided name
+    try:
+        subprocess.run(['flutter', 'create', project_name], check=True)
+        print(f"Flutter project '{project_name}' created successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to create Flutter project. Error: {e}")
+
+
+def search_application(app_name):
+    # Use a search API or web scraping to find application download links.
+    # Example search URL
+    search_url = f"https://www.duckduckgo.com/?q={app_name}+download"
+    response = requests.get(search_url)
+
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        links = []
+
+        # Extract all links that are HTTPS
+        for a in soup.find_all('a', href=True):
+            href = a['href']
+            if href.startswith("https://"):
+                links.append(href)
+
+        return links
+    else:
+        return []
+
+
+def download_application(app_name):
+    speak(f"Searching for {app_name}.")
+
+    # Search for the application
+    download_links = search_application(app_name)
+
+    if download_links:
+        # For this example, just take the first secure link
+        url = download_links[0]  # You could add logic to choose the best link
+
+        try:
+            response = requests.get(url, stream=True)
+            if response.status_code == 200:
+                desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+                file_path = os.path.join(desktop_path, f"{app_name}.zip")
+
+                with open(file_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+
+                speak(f"{app_name} has been downloaded successfully.")
+            else:
+                speak(
+                    f"Sorry, I couldn't download {app_name}. Please try again later.")
+        except Exception as e:
+            speak(f"An error occurred: {str(e)}")
+    else:
+        speak(
+            f"Sorry, I couldn't find any secure download links for {app_name}.")
+
 
 if __name__ == "__main__":
     speak("Hello, I am Jarvis. How can I assist you today?")
