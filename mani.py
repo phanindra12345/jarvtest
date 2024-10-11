@@ -68,6 +68,7 @@ def respond(command):
         speak("Pushing code to GitHub.")
         result = git_push()
         speak(result)
+        print(result)
         return False
 
     elif "commit" in command and "message" in command:
