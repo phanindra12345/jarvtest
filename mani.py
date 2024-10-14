@@ -185,7 +185,7 @@ def respond(command):
         speak("Please tell me the name of the application you want to download.")
         app_name = listen()
         if app_name:
-           download_application(app_name)
+            download_application(app_name)
 
 
     return None
